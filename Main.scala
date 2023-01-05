@@ -93,25 +93,23 @@ object Main extends App{
   println(prom(promsinCerosRevenue))
   println("")
 
-  /*
   // RUNTIME
   println("Columna runtime")
   //MAYOR
-  val mayorRuntime = data.flatMap(x => x.get("runtime")).map(_.toDouble).max
+  val mayorRuntime = data.flatMap(x => x.get("runtime")).filter(x => x.contains(".")).map(_.toDouble).max
   println("Mayor: "+mayorRuntime)
   //MENOR
-  val menorRuntime = data.flatMap(x => x.get("runtime")).map(_.toDouble).filter(x => x != 0).min
+  val menorRuntime = data.flatMap(x => x.get("runtime")).filter(x => x.contains(".")).map(_.toDouble).filter(x => x != 0).min
   println("Menor: "+menorRuntime)
   //PROMEDIO
-  val promconCerosRuntime = data.flatMap(x => x.get("runtime")).map(_.toDouble)
-  val promsinCerosRuntime = data.flatMap(x => x.get("runtime")).map(_.toDouble).filter(x => x != 0)
+  val promconCerosRuntime = data.flatMap(x => x.get("runtime")).filter(x => x.contains(".")).map(_.toDouble)
+  val promsinCerosRuntime = data.flatMap(x => x.get("runtime")).filter(x => x.contains(".")).map(_.toDouble).filter(x => x != 0)
   print("Promedio con ceros: ")
   println(prom(promconCerosRuntime))
   print("Promedio sin ceros: ")
   println(prom(promsinCerosRuntime))
   println("")
 
-   */
 
   // VOTE_AVERAGE
   println("Columna vote_average")
@@ -203,6 +201,5 @@ object Main extends App{
     print("\n\nDirector que ha dirigido mas películas: ")
     println(directorAparicion)
   //En este caso el que mas apariciones ha tenido es el campo nulo
-
 
 }
