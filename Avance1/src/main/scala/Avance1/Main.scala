@@ -1,6 +1,9 @@
 package Avance1
 
 import com.github.tototoshi.csv._
+import play.api.libs.json._
+import play.api.libs.json.{JsArray, JsValue, Json}
+
 import java.io.File
 
 object Main extends App{
@@ -165,8 +168,8 @@ object Main extends App{
     case nombre => (nombre._1, nombre._2.size)
   }.toList.sortBy(_._2)
   println("\nLista de los idiomas y su cantidad: " + idiomas)
-  println("Idiomas menos usados: " + idiomas.minBy(_._2))
-  println("Idiomas más usados: " + idiomas.maxBy(_._2))
+  println("Idioma menos usados: " + idiomas.minBy(_._2))
+  println("Idioma más usados: " + idiomas.maxBy(_._2))
 
   //Estado
   val status = data.flatMap(x => x.get("status"))
@@ -189,6 +192,7 @@ object Main extends App{
 
   //println("Lista de los actores: " + actores)
   //println("Actor con menos aparción en películas: " + actores.minBy(_._2))
+  println("\nColumna actores: ")
   println("Nombre más usado entre los actores: " + actores.maxBy(_._2))
 
   //Director
@@ -198,8 +202,91 @@ object Main extends App{
   }.map {
     case nombre => (nombre._1, nombre._2.size)
   }.toList.sortBy(_._2).maxBy(_._2)
-    print("\n\nDirector que ha dirigido mas películas: ")
+    print("\nDirector que ha dirigido mas películas: ")
     println(directorAparicion)
-  //En este caso el que mas apariciones ha tenido es el campo nulo
+  println("")
+  //En este caso el que mas apariciones ha tenido es el campo vacio
+
+  //JSON
+  val jsonEjemplo: JsValue = Json.parse("""
+  {
+    "name" : "Watership Down",
+    "location" : {
+      "lat" : 51.235685,
+      "long" : -1.309197
+    },
+    "residents" : [ {
+      "name" : "Fiver",
+      "age" : 4,
+      "role" : null
+    }, {
+      "name" : "Bigwig",
+      "age" : 6,
+      "role" : "Owsla"
+    } ]
+  }
+  """)
+
+  println("Ejemplo de uso de Json: ")
+  val lat = (jsonEjemplo \ "location" \ "lat").get
+
+  println(Json.stringify(jsonEjemplo))
+
+  val bigwig2 = (jsonEjemplo \ "residents" \ 1).get
+  println(bigwig2)
+
+  val names = jsonEjemplo \\ "name"
+  println(names)
+
+  val name = (jsonEjemplo \ "name").as[String]
+
+  //Consultas dentro del csv
+  println("\nConsultas con los datos del csv: ")
+  //JSON spoken_language
+  val jsonSpokenLanguage = data.flatMap(x => x.get("spoken_languages")).map(Json.parse)
+  val idiomas2 = jsonSpokenLanguage.flatMap(_ \\ "name").groupBy {
+    case nombre => nombre
+  }.map {
+    case nombre => (nombre._1, nombre._2.size)
+  }.toList.sortBy(_._2)
+  println("\nLista de los distintos tipos de idioma: " + idiomas2)
+  println("Idioma menos usado: " + idiomas2.minBy(_._2))
+  println("Idioma más usado: " + idiomas2.maxBy(_._2))
+
+  //JSON production_companies
+  val jsonProductionCompanies = data.flatMap(x => x.get("production_companies")).map(Json.parse)
+  val companias = jsonProductionCompanies.flatMap(_ \\ "name").groupBy {
+    case nombre => nombre
+  }.map {
+    case nombre => (nombre._1, nombre._2.size)
+  }.toList.sortBy(_._2)
+  //println("\nLista de las compañías con mas aportaciones en películas: " + companias)
+  println("\nConsultas sobre las compañías: ")
+  println("Compañía con menor aporte: " + companias.minBy(_._2))
+  println("Compañía con mayor aporte: " + companias.maxBy(_._2))
+
+  //JSON production_countries
+  val jsonProductionCountries = data.flatMap(x => x.get("production_countries")).map(Json.parse)
+  val paises = jsonProductionCountries.flatMap(_ \\ "name").groupBy {
+    case nombre => nombre
+  }.map {
+    case nombre => (nombre._1, nombre._2.size)
+  }.toList.sortBy(_._2)
+  println("\nLista de las países con aparación en películas: " + paises)
+  println("País con menor aparición en películas: " + paises.minBy(_._2))
+  println("País con mayor aparición en películas: " + paises.maxBy(_._2))
+
+  /*
+  //JSON crew
+  val jsonCrew = data.flatMap(x => x.get("crew")).map(Json.parse)
+  val crew = jsonCrew.flatMap(_ \\ "name").groupBy {
+    case nombre => nombre
+  }.map {
+    case nombre => (nombre._1, nombre._2.size)
+  }.toList.sortBy(_._2)
+  println("\nColumna crew: ")
+  println("Persona que menos ha participado dentro del crew: " + crew.minBy(_._2))
+  println("Persona que más ha participado dentro del crew: " + crew.maxBy(_._2))
+   */
 
 }
