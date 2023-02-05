@@ -63,6 +63,7 @@ object Scripts extends App{
 
    */
   //---------------------------------------------------------------Movie------------------------------------------------------------------------
+  /*
   case class Movie(index: Int,
                    idMovie: Int,
                    budget: Long,
@@ -141,6 +142,115 @@ object Scripts extends App{
 
   scriptDataMovie.foreach(insert =>
     Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\movie_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
+
+
+   */
+  //---------------------------------------------------------------Genre------------------------------------------------------------------------
+  /*
+  case class Genre(idGenre: Int,
+                      name: String)
+
+  val SQL_INSERT_PATTERN_GENRE =
+    """INSERT INTO Director (`idGenre`, `name`)
+      |VALUES
+      |(%d, '%s');
+      |""".stripMargin
+
+  val preGenreData = data
+    .flatMap(x => x.get("genres"))
+    .filter(_.nonEmpty)
+    .map(x => x.replace("Science Fiction", "Science-Fiction"))
+    .map(x => x.replace("TV Movie", "TV-Movie"))
+    .flatMap(x => x.split(" "))
+    .distinct
+    .sorted
+
+  val genreDataWCC = preGenreData.zipWithIndex.map { case (name, index) => (index, name) }
+  val genreData = genreDataWCC.map { case (idGenre, name) => Genre(idGenre, name) }
+
+  val scriptGenre = genreData
+    .map(genre => SQL_INSERT_PATTERN_GENRE.formatLocal(java.util.Locale.US,
+      genre.idGenre,
+      escapeMysql(genre.name)
+    ))
+
+  val scriptFileGenre = new File("C:\\Users\\user\\Desktop\\newSql\\genre_insert.sql")
+  if(scriptFileGenre.exists()) scriptFileGenre.delete()
+
+  scriptGenre.foreach(insert =>
+    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\genre_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
+
+
+   */
+  //---------------------------------------------------------------Movie-Genre------------------------------------------------------------------------
+  /*
+  case class MovieGenre(idMovie: Int,
+                        genreName: String)
+
+  val SQL_INSERT_PATTERN_MOVIEGENRE =
+    """INSERT INTO Director (`idMovie`, `genreName`)
+      |VALUES
+      |(%d, '%s');
+      |""".stripMargin
+
+  val preMovieGenreData = data
+    .map(row => (row("id"), row("genres")))
+    .filter(_._2.nonEmpty)
+    .map(x => (x._1, x._2.replace("Science Fiction", "Science-Fiction")))
+    .map(x => (x._1, x._2.replace("TV Movie", "TV-Movie")))
+    .map(x => (x._1.toInt, x._2.split(" ")))
+    .flatMap(x => x._2.map((x._1, _)))
+    .sortBy(_._1)
+
+  val movieGenreData = preMovieGenreData.map { case (idMovie, genreName) => MovieGenre(idMovie, genreName) }
+
+  val scriptMovieGenre = movieGenreData
+    .map(movieGenre => SQL_INSERT_PATTERN_MOVIEGENRE.formatLocal(java.util.Locale.US,
+      movieGenre.idMovie,
+      escapeMysql(movieGenre.genreName)
+    ))
+
+  val scriptFileMovieGenre = new File("C:\\Users\\user\\Desktop\\newSql\\movieGenre_insert.sql")
+  if(scriptFileMovieGenre.exists()) scriptFileMovieGenre.delete()
+
+  scriptMovieGenre.foreach(insert =>
+    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\movieGenre_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
+
+   */
+
+  //---------------------------------------------------------------Movie-Keyword------------------------------------------------------------------------
+  case class Keyword(idMovie: Int,
+                     word: String)
+
+  val SQL_INSERT_PATTERN_KEYWORD =
+    """INSERT INTO Director (`idMovie`, `word`)
+      |VALUES
+      |(%d, '%s');
+      |""".stripMargin
+
+  val preKeywordData = data
+    .map(row => (row("id"), row("keywords")))
+    .filter(_._2.nonEmpty)
+    .map(x => (x._1.toInt, x._2.split(" ")))
+    .flatMap(x => x._2.map((x._1, _)))
+    .sortBy(_._1)
+
+  val keywordData = preKeywordData.map { case (idMovie, genreName) => Keyword(idMovie, genreName) }
+
+  val scriptKeyword = keywordData
+    .map(keyword => SQL_INSERT_PATTERN_KEYWORD.formatLocal(java.util.Locale.US,
+      keyword.idMovie,
+      escapeMysql(keyword.word)
+    ))
+
+  val scriptFileKeyword = new File("C:\\Users\\user\\Desktop\\newSql\\keyword_insert.sql")
+  if(scriptFileKeyword.exists()) scriptFileKeyword.delete()
+
+  scriptKeyword.foreach(insert =>
+    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\keyword_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
 
   /*
