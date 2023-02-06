@@ -9,6 +9,7 @@ import scala.util.Try
 import scala.util.{Failure, Success}
 import play.api.libs.json._
 import play.api.libs.json.{JsArray, JsValue, Json}
+import scala.util.matching.Regex
 
 object Scripts extends App{
   val reader = CSVReader.open(new File("C:\\Users\\user\\IdeaProjects\\Avance1\\movie_dataset.csv"))
@@ -27,6 +28,7 @@ object Scripts extends App{
     .replaceAll("\"", "\\\\\"")
 
   //---------------------------------------------------------------Director-----------------------------------------------------------------------
+  /*
   case class Director(idDirector: Int,
                       name: String)
 
@@ -59,6 +61,8 @@ object Scripts extends App{
   scriptDirector.foreach(insert =>
     Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\director_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
+
+   */
 
 
   //---------------------------------------------------------------Movie------------------------------------------------------------------------
@@ -424,10 +428,205 @@ object Scripts extends App{
   )
 
    */
+  //---------------------------------------------------------------Movies-SpokenLan------------------------------------------------------------------------
+  /*
+  case class MovieSL(idMovie: Int,
+                      isoSL: String)
 
+  val SQL_INSERT_PATTERN_MOVIESL =
+    """INSERT INTO MovieSL(`idMovie`, `isoSL`)
+      |VALUES
+      |(%d, '%s');
+      |""".stripMargin
 
+  val preMovieSLData = data
+    .map(x => (x("id"), Json.parse(x("spoken_languages"))))
+    .map(x => (x._1, x._2 \\ "iso_639_1"))
+    .flatMap(x => x._2.map((x._1, _)))
+    .map(x => (x._1.toInt, x._2.as[String]))
+    .sortBy(_._1)
 
+  val movieSLData = preMovieSLData.map { case (idMoviePC, isoSL) => MovieSL(idMoviePC, isoSL) }
 
+  val scriptMovieSL = movieSLData
+    .map(moviesl => SQL_INSERT_PATTERN_MOVIESL.formatLocal(java.util.Locale.US,
+      moviesl.idMovie,
+      moviesl.isoSL
+    ))
+
+  val scriptFileMovieSL = new File("C:\\Users\\user\\Desktop\\newSql\\moviesl_insert.sql")
+  if(scriptFileMovieSL.exists()) scriptFileMovieSL.delete()
+
+    scriptMovieSL.foreach(insert =>
+    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\moviesl_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
+
+   */
+  //---------------------------------------------------------------Crew------------------------------------------------------------------------
+  /*
+  case class Crew(name: String,
+                  gender: Int,
+                  department: String,
+                  job: String,
+                  credit_id: String,
+                  id: Int)
+
+  val SQL_INSERT_PATTERN_PCY =
+    """INSERT INTO Crew(`name`, `gender`, `department`, `job`, `credit_id`, `id`)
+      |VALUES
+      |('%s', %d, '%s', '%s', '%s', %d);
+      |""".stripMargin
+
+  def replacePattern1(original : String) : String = {
+    var txtOr = original
+    val pattern: Regex = "(\\s\"(.*?)\",)".r
+
+    for(m <- pattern.findAllIn(original)) {
+      val textOriginal = m
+      val replacementText = m.replace("'", "-u0027")
+      txtOr = txtOr.replace(textOriginal, replacementText)
+    }
+    txtOr
+  }
+
+  def replacePattern2(original : String) : String = {
+    var txtOr = original
+    val pattern: Regex = "([a-z]\\s\"(.*?)\"\\s*[A-Z])".r
+    for(m <- pattern.findAllIn(original)) {
+      val textOriginal = m
+      val replacementText = m.replace("\"", "-u0022")
+      txtOr = txtOr.replace(textOriginal, replacementText)
+    }
+    txtOr
+  }
+
+  def replacePattern3(original : String) : String = {
+    var txtOr = original
+    val pattern: Regex = "(:\\s'\"(.*?)',)".r
+    for(m <- pattern.findAllIn(original)) {
+      val textOriginal = m
+      val replacementText = m.replace("\"", "-u0022")
+      txtOr = txtOr.replace(textOriginal, replacementText)
+    }
+    txtOr
+  }
+
+  val preCrewData = data
+    .map(row => row("crew"))
+    .map(replacePattern2)
+    .map(replacePattern1)
+    .map(replacePattern3)
+    .map(text => text.replace("'", "\""))
+    .map(text => text.replace("-u0027", "'"))
+    .map(text => text.replace("-u0022", "\\\""))
+    .map(text => Try(Json.parse(text)))
+    .filter(_.isSuccess)
+    .map(_.get)
+    .flatMap(_.as[List[JsValue]])
+    .map(x => (x("name").as[String], x("gender").as[Int], x("department").as[String], x("job").as[String], x("credit_id").as[String], x("id").as[Int]))
+    .distinct
+    .sortBy(_._5)
+
+  val CrewData = preCrewData.map { case (name, gender, department, job, credit_id, id) => Crew(name, gender, department, job, credit_id, id) }
+
+  val scriptCrew = CrewData
+    .map(crew => SQL_INSERT_PATTERN_PCY.formatLocal(java.util.Locale.US,
+      crew.name,
+      crew.gender,
+      crew.department,
+      crew.job,
+      crew.credit_id,
+      crew.id
+    ))
+
+  val scriptFileCrew = new File("C:\\Users\\user\\Desktop\\newSql\\crew_insert.sql")
+  if(scriptFileCrew.exists()) scriptFileCrew.delete()
+
+  scriptCrew.foreach(insert =>
+    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\crew_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
+  */
+  //---------------------------------------------------------------Movie-Crew------------------------------------------------------------------------
+  /*
+  case class MovieCrew(idMovie: Int,
+                       credit_id: String)
+
+  val SQL_INSERT_PATTERN_PCY =
+    """INSERT INTO MovieCrew(`idMovie`, `credit_id`)
+      |VALUES
+      |(%d, '%s');
+      |""".stripMargin
+
+  def replacePattern1(original : String) : String = {
+    var txtOr = original
+    val pattern: Regex = "(\\s\"(.*?)\",)".r
+
+    for(m <- pattern.findAllIn(original)) {
+      val textOriginal = m
+      val replacementText = m.replace("'", "-u0027")
+      txtOr = txtOr.replace(textOriginal, replacementText)
+    }
+    txtOr
+  }
+
+  def replacePattern2(original : String) : String = {
+    var txtOr = original
+    val pattern: Regex = "([a-z]\\s\"(.*?)\"\\s*[A-Z])".r
+    for(m <- pattern.findAllIn(original)) {
+      val textOriginal = m
+      val replacementText = m.replace("\"", "-u0022")
+      txtOr = txtOr.replace(textOriginal, replacementText)
+    }
+    txtOr
+  }
+
+  def replacePattern3(original : String) : String = {
+    var txtOr = original
+    val pattern: Regex = "(:\\s'\"(.*?)',)".r
+    for(m <- pattern.findAllIn(original)) {
+      val textOriginal = m
+      val replacementText = m.replace("\"", "-u0022")
+      txtOr = txtOr.replace(textOriginal, replacementText)
+    }
+    txtOr
+  }
+
+  val preCrewData = data
+    .map(row => row("crew"))
+    .map(replacePattern2)
+    .map(replacePattern1)
+    .map(replacePattern3)
+    .map(text => text.replace("'", "\""))
+    .map(text => text.replace("-u0027", "'"))
+    .map(text => text.replace("-u0022", "\\\""))
+    .map(text => Try(Json.parse(text)))
+    .filter(_.isSuccess)
+    .map(_.get)
+    .map(x => x \\ "credit_id")
+    .map(_.toList)
+
+  val preMovieCrewData = data
+    .flatMap(x => x.get("id")).zip(preCrewData)
+    .flatMap(x => x._2.map((x._1, _)))
+    .map(x => (x._1.toInt, x._2.as[String]))
+    .sortBy(_._1)
+
+  val movieCrewData = preMovieCrewData.map { case (idMovie, credit_id) => MovieCrew(idMovie, credit_id) }
+
+  val scriptMovieCrew = movieCrewData
+    .map(moviecrew => SQL_INSERT_PATTERN_PCY.formatLocal(java.util.Locale.US,
+      moviecrew.idMovie,
+      moviecrew.credit_id
+    ))
+
+  val scriptFileMovieCrew = new File("C:\\Users\\user\\Desktop\\newSql\\moviecrew_insert.sql")
+  if(scriptFileMovieCrew.exists()) scriptFileMovieCrew.delete()
+
+  scriptMovieCrew.foreach(insert =>
+    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\moviecrew_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
+  */
+  //---------------------------------------------------------------Cast------------------------------------------------------------------------
 
 
 
