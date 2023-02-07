@@ -627,17 +627,69 @@ object Scripts extends App{
   )
   */
   //---------------------------------------------------------------Cast------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
   /*
+  case class Cast(name: String)
+
+  val SQL_INSERT_PATTERN_GENRE =
+    """INSERT INTO Cast(`name`)
+      |VALUES
+      |('%s');
+      |""".stripMargin
+
+  def actorsNames(dataRaw: String): Option[String] = {
+    val response: Response = requests
+      .post("http://api.meaningcloud.com/topics-2.0",
+        data = Map("key" -> "c191a0d702e1216f7fd851a494b87f27",
+          "lang" -> "en",
+          "txt" -> dataRaw,
+          "tt" -> "e"),
+        headers = Map("content-type" -> "application/x-www-form-urlencoded"))
+    Thread.sleep(500)
+    if(response.statusCode == 200) {
+      Option(response.text)
+    } else
+      Option.empty
+  }
+
+  val preCastData = data
+    .map(row => row("cast"))
+    .filter(_.nonEmpty)
+    .map(StringContext.processEscapes)
+    .take(50) //Use un número limitado para hacer sus pruebas, pero, al final debe analizar todos los datos.
+    .map(actorsNames)
+    .map(json => Try(Json.parse(json.get)))
+    .filter(_.isSuccess)
+    .map(_.get)
+    .flatMap(json => json("entity_list").as[JsArray].value)
+    .map(_("form"))
+    .map(data => data.as[String])
+    .toSet
+
+  val castData = preCastData.map(name => Cast(name))
+
+  val scriptCast = castData
+    .map(genre => SQL_INSERT_PATTERN_GENRE.formatLocal(java.util.Locale.US,
+      genre.name
+    ))
+
+  val scriptFileCast = new File("C:\\Users\\user\\Desktop\\newSql\\cast_insert.sql")
+  if(scriptFileCast.exists()) scriptFileCast.delete()
+
+  scriptCast.foreach(insert =>
+    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\cast_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
+
+   */
+  //---------------------------------------------------------------Movie-Cast------------------------------------------------------------------------
+  case class MovieCast(idMovie: Int,
+                       name: String)
+
+  val SQL_INSERT_PATTERN_GENRE =
+    """INSERT INTO Cast(`idMovie`, `name`)
+      |VALUES
+      |(%d, '%s');
+      |""".stripMargin
+
   def actorsNames(dataRaw: String): Option[String] = {
     val response: Response = requests
       .post("http://api.meaningcloud.com/topics-2.0",
@@ -659,24 +711,32 @@ object Scripts extends App{
       .map(_.as[String])
       .toList
 
-  val castId = data
+  val movieCast = data
     .map(row => (row("id"), row("cast")))
     .filter(_._2.nonEmpty)
     .map(tuple2 => (tuple2._1, StringContext.processEscapes(tuple2._2)))
-    //.take(100)
+    .take(10)
     .map { t2 => (t2._1, actorsNames(t2._2)) }
     .map { t2 => (t2._1, Try(Json.parse(t2._2.get))) }
     .filter(_._2.isSuccess)
     .map(t2 => (t2._1, t2._2.get))
-    .map(t2 => (t2._1, transform(t2._2)))
+    .map(t2 => (t2._1.toInt, transform(t2._2)))
     .flatMap(t2 => t2._2.map(name => (t2._1, name)))
-    .map(_.productIterator.toList)
-    .distinct
+    .sortBy(_._1)
 
-  val f = new File("C:\\Users\\user\\Desktop\\sql\\movie_cast.csv")
-  val writer = CSVWriter.open(f)
-  writer.writeAll(castId)
-  writer.close()
-  */
+  val movieCastData = movieCast.map { case (idMovie, cast) => MovieCast(idMovie, cast) }
+
+  val scriptMovieCast = movieCastData
+  .map(moviecast => SQL_INSERT_PATTERN_GENRE.formatLocal(java.util.Locale.US,
+    moviecast.idMovie,
+    moviecast.name
+  ))
+
+  val scriptFileMovieCast = new File("C:\\Users\\user\\Desktop\\newSql\\moviecast_insert.sql")
+  if(scriptFileMovieCast.exists()) scriptFileMovieCast.delete()
+
+  scriptMovieCast.foreach(insert =>
+  Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\moviecast_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+  )
 
 }
