@@ -12,6 +12,11 @@ import play.api.libs.json.{JsArray, JsValue, Json}
 import scala.util.matching.Regex
 
 object Scripts extends App{
+
+  Class.forName("com.mysql.cj.jdbc.Driver")
+  ConnectionPool.singleton("jdbc:mysql://localhost:3306/MoviePI", "root", "oapa22")
+  implicit val session: DBSession = AutoSession
+
   val reader = CSVReader.open(new File("C:\\Users\\user\\IdeaProjects\\Avance1\\movie_dataset.csv"))
   val data = reader.allWithHeaders()
   reader.close()
@@ -29,7 +34,7 @@ object Scripts extends App{
 
   //---------------------------------------------------------------Director-----------------------------------------------------------------------
   /*
-  case class Director(idDirector: Int,
+  case class `Director`(idDirector: Int,
                       name: String)
 
   val SQL_INSERT_PATTERN_DIRECTOR =
@@ -45,10 +50,10 @@ object Scripts extends App{
     .distinct
     .sorted
 
- println(preDirectorData.size)
   val directorDataWCC = preDirectorData.zipWithIndex.map { case (name, index) => (index, name) }
   val directorData = directorDataWCC.map { case (idDirector, name) => Director(idDirector, name) }
 
+  /*
   val scriptDirector = directorData
     .map(director => SQL_INSERT_PATTERN_DIRECTOR.formatLocal(java.util.Locale.US,
       director.idDirector,
@@ -61,6 +66,16 @@ object Scripts extends App{
   scriptDirector.foreach(insert =>
     Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\director_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
+
+   */
+
+  directorData.map(x => sql"""
+    INSERT INTO `Director`(`idDirector`, `name`)
+    VALUES
+    (${x.idDirector}, ${x.name})
+    """.stripMargin
+    .update
+    .apply())
 
    */
 
@@ -81,15 +96,16 @@ object Scripts extends App{
                    runtime: Double,
                    tagline: String,
                    title: String,
+                   keywords: String,
                    vote_count: Double,
                    vote_average: Double,
-                   director: String)
+                   director_name: String)
 
   val SQL_INSERT_PATTERN_MOVIE =
-    """INSERT INTO Movie(`index`, `idMovie`, `budget`,`homepage`, `original_language`, `original_title`, `overview`, `popularity`,
-      |`release_date`, `revenue`, `status`, `runtime`, `tagline`, `title`, `vote_count`, `vote_average`, `director`)
+    """INSERT INTO `Movies`(`index`, `idMovie`, `budget`,`homepage`, `original_language`, `original_title`, `overview`, `popularity`,
+      |`release_date`, `revenue`, `status`, `runtime`, `tagline`, `title`, `keywords`, `vote_count`, `vote_average`, `director_name`)
       |VALUES
-      |(%d, %d, %d, '%s', '%s', '%s', '%s', %f, '%s', %d, '%s', %f, '%s', '%s', %f, %f, '%s');
+      |(%d, %d, %d, '%s', '%s', '%s', '%s', %f, '%s', %d, '%s', %f, '%s', '%s', '%s', %f, %f, '%s');
       |""".stripMargin
 
   val movieData = data
@@ -111,6 +127,10 @@ object Scripts extends App{
       },
       row("tagline"),
       row("title"),
+      row("keywords") match {
+        case valueKeywords if valueKeywords.trim.isEmpty => ""
+        case valueKeywords => valueKeywords
+      },
       row("vote_count").toDouble,
       row("vote_average").toDouble,
       row("director") match {
@@ -119,6 +139,7 @@ object Scripts extends App{
       })
       )
 
+  /*
   val scriptDataMovie = movieData
     .map(movie => SQL_INSERT_PATTERN_MOVIE.formatLocal(java.util.Locale.US,
       movie.index,
@@ -135,9 +156,10 @@ object Scripts extends App{
       movie.runtime,
       movie.tagline,
       movie.title,
+      escapeMysql(movie.keywords),
       movie.vote_count,
       movie.vote_average,
-      escapeMysql(movie.director)
+      escapeMysql(movie.director_name)
     ))
 
   val scriptFileMovie = new File("C:\\Users\\user\\Desktop\\newSql\\movie_insert.sql")
@@ -147,6 +169,16 @@ object Scripts extends App{
     Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\movie_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
 
+   */
+  movieData.map(x => sql"""
+      INSERT INTO `Movies`(`index`, `idMovie`, `budget`,`homepage`, `original_language`, `original_title`, `overview`, `popularity`,
+      |`release_date`, `revenue`, `status`, `runtime`, `tagline`, `title`, `keywords`, `vote_count`, `vote_average`, `director_name`)
+      |VALUES
+      |(${x.index}, ${x.idMovie},${x.budget}, ${x.homepage},${x.original_language}, ${x.original_title},${x.overview}, ${x.popularity},
+        ${x.release_date}, ${x.revenue},${x.status}, ${x.runtime},${x.tagline}, ${x.title},${x.keywords}, ${x.vote_count},${x.vote_average}, ${x.director_name});
+      |""".stripMargin
+      .update
+      .apply())
 
    */
   //---------------------------------------------------------------Genre------------------------------------------------------------------------
@@ -155,7 +187,7 @@ object Scripts extends App{
                       name: String)
 
   val SQL_INSERT_PATTERN_GENRE =
-    """INSERT INTO Genre(`idGenre`, `name`)
+    """INSERT INTO `Genre`(`idGenre`, `name`)
       |VALUES
       |(%d, '%s');
       |""".stripMargin
@@ -172,6 +204,7 @@ object Scripts extends App{
   val genreDataWCC = preGenreData.zipWithIndex.map { case (name, index) => (index, name) }
   val genreData = genreDataWCC.map { case (idGenre, name) => Genre(idGenre, name) }
 
+  /*
   val scriptGenre = genreData
     .map(genre => SQL_INSERT_PATTERN_GENRE.formatLocal(java.util.Locale.US,
       genre.idGenre,
@@ -185,15 +218,25 @@ object Scripts extends App{
     Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\genre_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
 
+   */
+
+  genreData.map(x => sql"""
+    INSERT INTO `Genre`(`idGenre`, `name`)
+    VALUES
+    (${x.idGenre}, ${x.name})
+    """.stripMargin
+    .update
+    .apply())
 
    */
+
   //---------------------------------------------------------------Movie-Genre------------------------------------------------------------------------
   /*
   case class MovieGenre(idMovie: Int,
                         genreName: String)
 
   val SQL_INSERT_PATTERN_MOVIEGENRE =
-    """INSERT INTO MovieGenre(`idMovie`, `genreName`)
+    """INSERT INTO `Genre_Movie`(`Movies_idMovie`, `Genre_name`)
       |VALUES
       |(%d, '%s');
       |""".stripMargin
@@ -208,7 +251,7 @@ object Scripts extends App{
     .sortBy(_._1)
 
   val movieGenreData = preMovieGenreData.map { case (idMovie, genreName) => MovieGenre(idMovie, genreName) }
-
+/*
   val scriptMovieGenre = movieGenreData
     .map(movieGenre => SQL_INSERT_PATTERN_MOVIEGENRE.formatLocal(java.util.Locale.US,
       movieGenre.idMovie,
@@ -222,40 +265,15 @@ object Scripts extends App{
     Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\movieGenre_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
 
-   */
+ */
 
-  //---------------------------------------------------------------Movie-Keyword------------------------------------------------------------------------
-  /*
-  case class Keyword(idMovie: Int,
-                     word: String)
-
-  val SQL_INSERT_PATTERN_KEYWORD =
-    """INSERT INTO Keyword(`idMovie`, `word`)
-      |VALUES
-      |(%d, '%s');
-      |""".stripMargin
-
-  val preKeywordData = data
-    .map(row => (row("id"), row("keywords")))
-    .filter(_._2.nonEmpty)
-    .map(x => (x._1.toInt, x._2.split(" ")))
-    .flatMap(x => x._2.map((x._1, _)))
-    .sortBy(_._1)
-
-  val keywordData = preKeywordData.map { case (idMovie, word) => Keyword(idMovie, word) }
-
-  val scriptKeyword = keywordData
-    .map(keyword => SQL_INSERT_PATTERN_KEYWORD.formatLocal(java.util.Locale.US,
-      keyword.idMovie,
-      escapeMysql(keyword.word)
-    ))
-
-  val scriptFileKeyword = new File("C:\\Users\\user\\Desktop\\newSql\\keyword_insert.sql")
-  if(scriptFileKeyword.exists()) scriptFileKeyword.delete()
-
-  scriptKeyword.foreach(insert =>
-    Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\keyword_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-  )
+  movieGenreData.map(x => sql"""
+    INSERT INTO `Genre_Movie`(`Movies_idMovie`, `Genre_name`)
+    VALUES
+    (${x.idMovie}, ${x.genreName})
+    """.stripMargin
+    .update
+    .apply())
 
    */
   //---------------------------------------------------------------Production_Companies------------------------------------------------------------------------
@@ -264,7 +282,7 @@ object Scripts extends App{
                         name: String)
 
   val SQL_INSERT_PATTERN_PC =
-    """INSERT INTO PCompanies(`idPC`, `name`)
+    """INSERT INTO `Production_Company`(`idProduction_Company`, `name`)
       |VALUES
       |(%d, '%s');
       |""".stripMargin
@@ -278,6 +296,7 @@ object Scripts extends App{
 
   val PCData = prePCData.map { case (idPC, word) => PCompanies(idPC, word) }
 
+  /*
   val scriptPC = PCData
     .map(pc => SQL_INSERT_PATTERN_PC.formatLocal(java.util.Locale.US,
       pc.idPC,
@@ -292,13 +311,24 @@ object Scripts extends App{
   )
 
    */
+
+  PCData.map(x => sql"""
+    INSERT INTO `Production_Company`(`idProduction_Company`, `name`)
+    VALUES
+    (${x.idPC}, ${x.name})
+    """.stripMargin
+    .update
+    .apply())
+
+   */
+
   //---------------------------------------------------------------Movies-PC------------------------------------------------------------------------
   /*
   case class MoviePC(idMovie: Int,
                      idPC: Int)
 
   val SQL_INSERT_PATTERN_MOVIEPC =
-    """INSERT INTO MoviePC(`idMovie`, `idPC`)
+    """INSERT INTO `Company_Movie`(`Movies_idMovie`, `Production_Company_idProduction_Company`)
       |VALUES
       |(%d, %d);
       |""".stripMargin
@@ -312,6 +342,7 @@ object Scripts extends App{
 
   val moviePCData = preMoviePCData.map { case (idMoviePC, idPC) => MoviePC(idMoviePC, idPC) }
 
+  /*
   val scriptMoviePC = moviePCData
     .map(moviepc => SQL_INSERT_PATTERN_MOVIEPC.formatLocal(java.util.Locale.US,
       moviepc.idMovie,
@@ -326,13 +357,24 @@ object Scripts extends App{
   )
 
    */
+
+  moviePCData.map(x => sql"""
+    INSERT INTO `Company_Movie`(`Movies_idMovie`, `Production_Company_idProduction_Company`)
+    VALUES
+    (${x.idMovie}, ${x.idPC})
+    """.stripMargin
+    .update
+    .apply())
+
+   */
+
   //---------------------------------------------------------------Production_Countries------------------------------------------------------------------------
   /*
   case class PCountries(iso: String,
                         name: String)
 
   val SQL_INSERT_PATTERN_PCY =
-    """INSERT INTO PCountries(`isoPCy`, `name`)
+    """INSERT INTO `Production_Country`(`isoCountry`, `name`)
       |VALUES
       |('%s', '%s');
       |""".stripMargin
@@ -346,6 +388,7 @@ object Scripts extends App{
 
   val PCyData = prePCyData.map { case (iso, name) => PCountries(iso, name) }
 
+  /*
   val scriptPCy = PCyData
     .map(pcy => SQL_INSERT_PATTERN_PCY.formatLocal(java.util.Locale.US,
       pcy.iso,
@@ -360,8 +403,17 @@ object Scripts extends App{
   )
 
    */
+
+  PCyData.map(x => sql"""
+    INSERT INTO `Production_Country`(`isoCountry`, `name`)
+    VALUES
+    (${x.iso}, ${x.name})
+    """.stripMargin
+    .update
+    .apply())
+
+   */
   //---------------------------------------------------------------Movies-PCy------------------------------------------------------------------------
-  /*
   case class MoviePCy(idMovie: Int,
                       isoPCy: String)
 
@@ -393,7 +445,7 @@ object Scripts extends App{
     Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\moviepcy_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
 
-   */
+
   //---------------------------------------------------------------Spoken_languages------------------------------------------------------------------------
   /*
   case class SpokenLanguages(iso: String,
@@ -681,6 +733,7 @@ object Scripts extends App{
 
    */
   //---------------------------------------------------------------Movie-Cast------------------------------------------------------------------------
+  /*
   case class MovieCast(idMovie: Int,
                        name: String)
 
@@ -738,5 +791,7 @@ object Scripts extends App{
   scriptMovieCast.foreach(insert =>
   Files.write(Paths.get("C:\\Users\\user\\Desktop\\newSql\\moviecast_insert.sql"), insert.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
   )
+
+   */
 
 }
