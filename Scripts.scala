@@ -227,9 +227,7 @@ object Scripts extends App{
     """.stripMargin
     .update
     .apply())
-
    */
-
   //---------------------------------------------------------------Movie-Genre------------------------------------------------------------------------
   /*
   case class MovieGenre(idMovie: Int,
@@ -558,7 +556,7 @@ object Scripts extends App{
                   credit_id: String,
                   id: Int)
 
-  val SQL_INSERT_PATTERN_PCY =
+  val SQL_INSERT_PATTERN_CREW =
     """INSERT INTO `Crew`(`name`, `gender`, `department`, `job`, `credit_id`, `idCrew`)
       |VALUES
       |('%s', %d, '%s', '%s', '%s', %d);
@@ -618,7 +616,7 @@ object Scripts extends App{
 
   /*
   val scriptCrew = CrewData
-    .map(crew => SQL_INSERT_PATTERN_PCY.formatLocal(java.util.Locale.US,
+    .map(crew => SQL_INSERT_PATTERN_CREW.formatLocal(java.util.Locale.US,
       crew.name,
       crew.gender,
       crew.department,
@@ -650,7 +648,7 @@ object Scripts extends App{
   case class MovieCrew(idMovie: Int,
                        credit_id: String)
 
-  val SQL_INSERT_PATTERN_PCY =
+  val SQL_INSERT_PATTERN_MOVIECREW =
     """INSERT INTO `Crew_Movie`(`Movies_idMovie`, `Crew_credit_id`)
       |VALUES
       |(%d, '%s');
@@ -714,7 +712,7 @@ object Scripts extends App{
 
   /*
   val scriptMovieCrew = movieCrewData
-    .map(moviecrew => SQL_INSERT_PATTERN_PCY.formatLocal(java.util.Locale.US,
+    .map(moviecrew => SQL_INSERT_PATTERN_MOVIECREW.formatLocal(java.util.Locale.US,
       moviecrew.idMovie,
       moviecrew.credit_id
     ))
@@ -742,7 +740,7 @@ object Scripts extends App{
   /*
   case class Cast(name: String)
 
-  val SQL_INSERT_PATTERN_GENRE =
+  val SQL_INSERT_PATTERN_CAST =
     """INSERT INTO `Actor`(`name`)
       |VALUES
       |('%s');
@@ -781,7 +779,7 @@ object Scripts extends App{
 
   /*
   val scriptCast = castData
-    .map(cast => SQL_INSERT_PATTERN_GENRE.formatLocal(java.util.Locale.US,
+    .map(cast => SQL_INSERT_PATTERN_CAST.formatLocal(java.util.Locale.US,
       cast.name
     ))
 
@@ -807,7 +805,7 @@ object Scripts extends App{
   case class MovieCast(idMovie: Int,
                        nameCast: String)
 
-  val SQL_INSERT_PATTERN_GENRE =
+  val SQL_INSERT_PATTERN_MOVIECAST =
     """INSERT INTO `Actor_Movie`(`Movies_idMovie`, `Actor_nameActor`)
       |VALUES
       |(%d, '%s');
@@ -850,7 +848,7 @@ object Scripts extends App{
   val movieCastData = movieCast.map { case (idMovie, nameCast) => MovieCast(idMovie, nameCast) }
   /*
   val scriptMovieCast = movieCastData
-  .map(moviecast => SQL_INSERT_PATTERN_GENRE.formatLocal(java.util.Locale.US,
+  .map(moviecast => SQL_INSERT_PATTERN_MOVIECAST.formatLocal(java.util.Locale.US,
     moviecast.idMovie,
     moviecast.nameCast
   ))
