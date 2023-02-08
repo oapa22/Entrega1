@@ -1,29 +1,35 @@
 package Avance1
 
 import com.github.tototoshi.csv._
+import java.io.File
+
 import play.api.libs.json._
 import play.api.libs.json.{JsArray, JsValue, Json}
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import com.cibo.evilplot._
+import com.cibo.evilplot.plot._
 import com.cibo.evilplot.plot.{BarChart, Histogram}
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme.{DefaultElements, DefaultTheme, defaultTheme}
-import java.io.File
 import scala.util.matching.Regex
 import scala.util.Try
 import scala.util.{Failure, Success}
-
 object Main extends App{
-  val reader = CSVReader.open(new File("C:\\Users\\user\\IdeaProjects\\Avance1\\movie_dataset.csv"))
+
+  val reader = CSVReader.open(new File(
+    "C:\\Users\\user\\IdeaProjects\\Avance1\\movie_dataset.csv"))
   val data = reader.allWithHeaders()
   reader.close()
 
   //Función para calcular el promedio
-
   val prom = (valores : List[Double]) => valores.sum.toDouble/valores.length
 
   //Lista con los títulos de las películas
   val titulo = data.flatMap(x => x.get("original_title"))
+
+  //Funcion para realizar graficos con valores muy distintos
+  def cbrt(x: Double): Double = java.lang.Math.cbrt(x)
+
   //Para que los nombres de las gráficas no se sobrepongan
   implicit val theme = DefaultTheme.copy(
     elements = DefaultElements.copy(categoricalXAxisLabelOrientation = 45)
@@ -58,6 +64,7 @@ object Main extends App{
     .title("Películas con mayor presupuesto")(theme)
     .xAxis(budgetLabels)(theme)
     .yAxis()(theme)
+    .ybounds(225000000)
     .frame()(theme)
     .yLabel("Presupuesto en $")(theme)
     .bottomLegend()(theme)
@@ -337,7 +344,12 @@ object Main extends App{
   //Distribucion de frecuencia
 
   //Géneros
-  val genres = data.flatMap(x => x.get("genres")).flatMap(x => x.split(" ").toList)
+  val genres = data
+    .flatMap(x => x.get("genres"))
+    .filter(_.nonEmpty)
+    .map(x => x.replace("Science Fiction", "Science-Fiction"))
+    .map(x => x.replace("TV Movie", "TV-Movie"))
+    .flatMap(x => x.split(" "))
   val generosAparicion = genres.groupBy {
     case nombre => nombre
   }.map {
@@ -418,16 +430,12 @@ object Main extends App{
   //Gráfico
   val estadosValues = estados.take(10).map(_._2).map(_.toDouble)
   val estadosLabels = estados.take(10).map(_._1)
-  BarChart(estadosValues)(theme)
-    .title("Estados de las películas")(theme)
-    .xAxis(estadosLabels)(theme)
-    .yAxis()(theme)
-    .frame()(theme)
-    .ybounds(0.0, 25.0)
-    .yLabel("Producciones")(theme)
-    .bottomLegend()(theme)
+  val estados2 = estadosLabels.zip(estadosValues.map(x => cbrt(x)))
+  PieChart(estados2)(theme)
+    .title("Estados de películas")(theme)
+    .rightLegend()(theme)
     .render()(theme)
-    .write(new File("C:\\Users\\user\\Desktop\\histogramas\\estados.png"))
+    .write(new File("C:\\Users\\user\\Desktop\\histogramas\\test\\estados3.png"))
 
   //Actores
   val cast = data.flatMap(x => x.get("cast")).flatMap(x => x.split(" ").toList)
@@ -518,7 +526,7 @@ object Main extends App{
   }.map {
     case nombre => (nombre._1, nombre._2.size)
   }.toList.sortBy(_._2)
-  println("\nLista de los distintos tipos de idioma: " + idiomas2)
+  println("\nLista de los distintos tipos de idiomas: " + idiomas2)
   println("Idioma menos usado: " + idiomas2.minBy(_._2))
   println("Idioma más usado: " + idiomas2.maxBy(_._2))
   //Gráfico
@@ -656,6 +664,7 @@ object Main extends App{
     .map(text => text.replace("-u0027", "'"))
     .map(text => text.replace("-u0022", "\\\""))
     .map(text => Json.parse(text))
+
   val departamentos = crew.map(_ \\ "department")
   val trabajos = crew.map(_ \\ "job")
   val datos1 = titulo.zip(departamentos)
@@ -696,5 +705,23 @@ object Main extends App{
     .bottomLegend()(theme)
     .render()(theme)
     .write(new File("C:\\Users\\user\\Desktop\\histogramas\\departamentos.png"))
+
+  val crewG = crew.flatMap(_ \\ "gender").map(x => x.toString)
+  val crewGender = crewG.groupBy {
+    case nombre => nombre
+  }.map {
+    case nombre => (nombre._1, nombre._2.size)
+  }.toList.sortBy(_._2)
+
+  println(crewGender)
+  //Gráfico
+  val genderValues = crewGender.map(_._2).map(_.toDouble)
+  val genderLabels = crewGender.map(_._1)
+  val gender2 = genderLabels.zip(genderValues.map(x => cbrt(x)))
+  PieChart(gender2)(theme)
+    .title("Géneros entre miembros de crew")(theme)
+    .rightLegend()(theme)
+    .render()(theme)
+    .write(new File("C:\\Users\\user\\Desktop\\histogramas\\test\\generos3.png"))
 
 }
